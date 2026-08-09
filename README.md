@@ -35,3 +35,16 @@ for i, pkg in enumerate(result["results"]):
 
 - [GC InfoBase - Open Datasets](https://open.canada.ca/data/en/dataset/a35cf382-690c-4221-a971-cf0fd189a46f)
 - [GC InfoBase – Departmental Plans and Results Reports](https://open.canada.ca/data/en/dataset/b15ee8d7-2ac0-4656-8330-6c60d085cda8)
+
+# [Solr query syntax](https://solr.apache.org/guide/solr/latest/query-guide/standard-query-parser.html)
+
+|Query                                        |Meaning                           |
+|---------------------------------------------|----------------------------------|
+|*:*                                          |Everything                        |
+|border                                       |Free-text search for “border”     |
+|title:removals                               |Word “removals” in the title field|
+|organization:cbsa-asfc                       |Exact organization slug           |
+|res_format:CSV                               |Has at least one CSV resource     |
+|tags:immigration                             |Has the tag “immigration”         |
+|title:(removals OR detention)                |Title contains either word        |
+|metadata_modified:[2024-01-01T00:00:00Z TO *]|Updated since 2024                |
