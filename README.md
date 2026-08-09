@@ -1,25 +1,31 @@
 # gcinfo
 
 ```py
+# List dataset titles that match a query and have type CSV
+import gcinfo
+
+for i, pkg in enumerate(gcinfo.search_datasets(query="temporary", format_filter="CSV")["results"]):
+    gcinfo.list_title(pkg)
+```
+
+```py
+# List all datasets their datatypes that have type CSV, limiting to 15 datasets per Open Canada API call
 import gcinfo
 
 result = gcinfo.search_datasets(query="*:*", rows=15, format_filter="CSV")
 print(f"Total matching packages: {result['count']}")
 
 for i, pkg in enumerate(result["results"]):
-    if i == 3:
+    if i == 2:
         break
     gcinfo.list_resources(pkg)
+```
 
-result = gcinfo.search_datasets(query="removals", rows=20, format_filter="CSV")
-for i, pkg in enumerate(result["results"]):
-    if i == 3:
-        break
-    gcinfo.list_resources(pkg)
-
-# result = gcinfo.search_datasets(query="GC InfoBase OR \"Departmental Plans\" OR \"Departmental Results\"", rows=10)
-# result = gcinfo.search_datasets(organization="cbsa-asfc", format_filter="CSV")
-# result = gcinfo.search_datasets(format_filter="JSON", rows=25)
+```py
+# Other dataset search examples
+result = gcinfo.search_datasets(query="GC InfoBase OR \"Departmental Plans\" OR \"Departmental Results\"", rows=10)
+result = gcinfo.search_datasets(organization="cbsa-asfc", format_filter="CSV")
+result = gcinfo.search_datasets(format_filter="JSON", rows=25)
 ```
 
 ## Government of Canada Information
