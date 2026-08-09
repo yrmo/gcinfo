@@ -40,11 +40,11 @@ for i, pkg in enumerate(result["results"]):
 
 |Query                                        |Meaning                           |
 |---------------------------------------------|----------------------------------|
-|*:*                                          |Everything                        |
-|border                                       |Free-text search for “border”     |
-|title:removals                               |Word “removals” in the title field|
-|organization:cbsa-asfc                       |Exact organization slug           |
-|res_format:CSV                               |Has at least one CSV resource     |
-|tags:immigration                             |Has the tag “immigration”         |
-|title:(removals OR detention)                |Title contains either word        |
-|metadata_modified:[2024-01-01T00:00:00Z TO *]|Updated since 2024                |
+|`*:*`                                          |Everything                        |
+|`border`                                       |Free-text search for “border”     |
+|`title:removals`                               |Word “removals” in the title field|
+|`organization:cbsa-asfc`                       |Exact organization slug           |
+|`res_format:CSV`                               |Has at least one CSV resource     |
+|`tags:immigration`                             |Has the tag “immigration”         |
+|`title:(removals OR detention)`                |Title contains either word        |
+|`metadata_modified:[2024-01-01T00:00:00Z TO *]`|Updated since 2024                |
