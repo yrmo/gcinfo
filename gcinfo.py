@@ -55,6 +55,11 @@ def list_resources(package: dict, preferred_formats: list[str] = None):
         print(f"  [{fmt:8}] {res.get('name')}")
         print(f"           {res.get('url')}")
 
+def list_title(package: dict, preferred_formats: list[str] = None):
+    """Pretty-print the downloadable resources of a package."""
+    preferred_formats = preferred_formats or ["CSV", "JSON", "XLSX", "XML", "GEOJSON"]
+
+    print(f"{package['title']}")
 
 def find_resource_url(
     query: str, name_contains: str, format: str = "CSV"
