@@ -1,7 +1,14 @@
+from pathlib import Path
 import requests
-from typing import Optional
+import zipfile
+import io
+import pandas as pd
+from typing import Optional, Tuple
 
 CKAN = "https://open.canada.ca/data/api/3/action"
+CACHE_DIR = Path("cache")
+CACHE_DIR.mkdir(exist_ok=True)
+
 
 
 def search_datasets(
@@ -38,6 +45,56 @@ def search_datasets(
     r.raise_for_status()
     return r.json()["result"]
 
+
+def download_zip(
+    url: str,
+    force: bool = False,
+    return_metadata: bool = True,
+) -> Tuple[pd.DataFrame, Optional[pd.DataFrame]]:
+    """
+    Download a StatCan table ZIP, cache it, and return the data (and optional metadata) DataFrames.
+    
+    Parameters
+    ----------
+    url : str
+        Full URL to the .zip file (e.g. https://www150.statcan.gc.ca/n1/tbl/csv/17100121-eng.zip)
+    force : bool
+        If True, re-download even if the file is already cached.
+    return_metadata : bool
+        If True, also return the metadata CSV as a second DataFrame.
+    
+    Returns
+    -------
+    (df, df_metadata)  or  (df, None)
+    """
+    filename = url.split("/")[-1]
+    cache_path = CACHE_DIR / filename
+
+    if force or not cache_path.exists():
+        print(f"Downloading {filename} ...")
+        r = requests.get(url)
+        r.raise_for_status()
+        cache_path.write_bytes(r.content)
+        print(f"Saved to {cache_path}")
+    else:
+        print(f"Using cached file: {cache_path}")
+
+    with zipfile.ZipFile(cache_path) as z:
+        csv_files = [n for n in z.namelist() if n.lower().endswith(".csv")]
+        
+        if not csv_files:
+            raise ValueError("No CSV files found in the ZIP")
+
+        # First CSV is almost always the data
+        with z.open(csv_files[0]) as f:
+            df = pd.read_csv(f)
+
+        df_metadata = None
+        if return_metadata and len(csv_files) > 1:
+            with z.open(csv_files[1]) as f:
+                df_metadata = pd.read_csv(f)
+
+    return df, df_metadata
 
 def list_resources(package: dict, preferred_formats: list[str] = None):
     """Pretty-print the downloadable resources of a package."""

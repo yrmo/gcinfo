@@ -1,3 +1,6 @@
+# ignore cache
+cache
+
 # csvs
 *.csv
 
