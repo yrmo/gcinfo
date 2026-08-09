@@ -12,8 +12,7 @@ for i, pkg in enumerate(gcinfo.search_datasets(query="temporary", format_filter=
 # List resources on a dataset by querying it's exact title
 import gcinfo
 
-for i, pkg in enumerate(gcinfo.search_datasets(query='title:"Temporary Residents: Temporary Foreign Worker Program (TFWP) and International Mobility Program (IMP) Work Permit Holders – Monthly IRCC Updates"', format_filter="CSV")["results"]):
-    gcinfo.list_resources(pkg)
+gcinfo.list_resources(gcinfo.search_datasets(query='title:"Temporary Residents: Temporary Foreign Worker Program (TFWP) and International Mobility Program (IMP) Work Permit Holders – Monthly IRCC Updates"')["results"][0])
 ```
 
 ```py
