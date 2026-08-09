@@ -12,7 +12,7 @@ for pkg in gcinfo.search_datasets(query="temporary", format_filter="CSV")["resul
 # List resources on a dataset by querying it's exact title
 import gcinfo
 
-gcinfo.list_resources(gcinfo.search_datasets(query='title:"Temporary Residents: Temporary Foreign Worker Program (TFWP) and International Mobility Program (IMP) Work Permit Holders – Monthly IRCC Updates"')["results"][0])
+gcinfo.list_resources(gcinfo.search_datasets(query='title:"Estimates of the number of non-permanent residents by type, quarterly"')["results"][0])
 ```
 
 ```py
