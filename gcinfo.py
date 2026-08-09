@@ -1,9 +1,7 @@
 import requests
 
-
-import requests
-
 CKAN_BASE = "https://open.canada.ca/data/api/3/action"
+
 
 def find_rbpo_rppo_en_url():
     """
@@ -13,7 +11,7 @@ def find_rbpo_rppo_en_url():
     search_params = {
         "q": "GC InfoBase Departmental Plans Results Expenditures Full Time Equivalents",
         "rows": 10,
-        "fq": "res_format:CSV"
+        "fq": "res_format:CSV",
     }
 
     r = requests.get(f"{CKAN_BASE}/package_search", params=search_params, timeout=30)
@@ -31,15 +29,15 @@ def find_rbpo_rppo_en_url():
             package = pkg
             break
     if package is None:
-        package = results[0]          # fallback to the top hit
+        package = results[0]  # fallback to the top hit
 
     print(f"Using package: {package['title']}  (id={package['id']})")
 
     # Look through its resources for the English expenditures/FTE CSV
     for res in package.get("resources", []):
         name = (res.get("name") or "").lower()
-        url  = res.get("url") or ""
-        fmt  = (res.get("format") or "").upper()
+        url = res.get("url") or ""
+        fmt = (res.get("format") or "").upper()
 
         if fmt == "CSV" and (
             "rbpo_rppo_en.csv" in url.lower()
@@ -49,6 +47,7 @@ def find_rbpo_rppo_en_url():
             return url
 
     raise RuntimeError("Could not find the English rbpo_rppo CSV resource")
+
 
 if __name__ == "__main__":
     url = find_rbpo_rppo_en_url()
