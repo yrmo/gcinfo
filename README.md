@@ -9,6 +9,14 @@ for i, pkg in enumerate(gcinfo.search_datasets(query="temporary", format_filter=
 ```
 
 ```py
+# List resources on a dataset by querying it's exact title
+import gcinfo
+
+for i, pkg in enumerate(gcinfo.search_datasets(query='title:"Temporary Residents: Temporary Foreign Worker Program (TFWP) and International Mobility Program (IMP) Work Permit Holders – Monthly IRCC Updates"', format_filter="CSV")["results"]):
+    gcinfo.list_resources(pkg)
+```
+
+```py
 # List all datasets their datatypes that have type CSV, limiting to 15 datasets per Open Canada API call
 import gcinfo
 
