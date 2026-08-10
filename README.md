@@ -15,6 +15,8 @@ gcinfo.list_resources(gcinfo.search_datasets(query='title:"Estimates of the numb
 ```
 
 ```py
+# Download and store dataset and metadata in dataframes
+
 df, df_meta = gcinfo.download_zip("https://www150.statcan.gc.ca/n1/tbl/csv/17100121-eng.zip") # URL from list_resources
 ```
 
