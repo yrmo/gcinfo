@@ -34,20 +34,6 @@ result = gcinfo.search_datasets(organization="cbsa-asfc", format_filter="CSV")
 result = gcinfo.search_datasets(format_filter="JSON", rows=25)
 ```
 
-## Government of Canada Information
-
-|Purpose                      |Endpoint                             |
-|-----------------------------|-------------------------------------|
-|Search packages              |`/package_search`                      |
-|Get one package by id/name   |`/package_show?id=...`                 |
-|Search resources             |`/resource_search?query=name:something`|
-|List all organizations       |`/organization_list`                   |
-|List all tags                |`/tag_list`                            |
-|Package list (just names/ids)|`/package_list`                        |
-
-- [GC InfoBase - Open Datasets](https://open.canada.ca/data/en/dataset/a35cf382-690c-4221-a971-cf0fd189a46f)
-- [GC InfoBase – Departmental Plans and Results Reports](https://open.canada.ca/data/en/dataset/b15ee8d7-2ac0-4656-8330-6c60d085cda8)
-
 # [Solr query syntax](https://solr.apache.org/guide/solr/latest/query-guide/standard-query-parser.html)
 
 |Query                                        |Meaning                           |
