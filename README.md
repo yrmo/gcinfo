@@ -1,23 +1,22 @@
 # gcinfo
 
 ```py
-# List dataset titles that match a query and have type CSV
 import gcinfo
+```
 
+```py
+# List dataset titles that match a query and have type CSV
 gcinfo.search_titles(query="non-permanent", format_filter="CSV")
 ```
 
 ```py
 # List resources on a dataset by querying it's exact title
-import gcinfo
-
 gcinfo.list_resources(gcinfo.search_datasets(query='title:"Estimates of the number of non-permanent residents by type, quarterly"')["results"][0])
 ```
 
 ```py
 # Download and store dataset and metadata in dataframes
-
-df, df_meta = gcinfo.download_zip("https://www150.statcan.gc.ca/n1/tbl/csv/17100121-eng.zip") # URL from list_resources
+df, df_meta = gcinfo.download_zip("https://www150.statcan.gc.ca/n1/tbl/csv/17100121-eng.zip")
 ```
 
 # [Solr query syntax](https://solr.apache.org/guide/solr/latest/query-guide/standard-query-parser.html)
