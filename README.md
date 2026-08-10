@@ -4,8 +4,7 @@
 # List dataset titles that match a query and have type CSV
 import gcinfo
 
-for dataset in gcinfo.search_datasets(query="temporary", format_filter="CSV")["results"]:
-    gcinfo.list_title(dataset)
+gcinfo.search_titles(query="temporary", format_filter="CSV")
 ```
 
 ```py

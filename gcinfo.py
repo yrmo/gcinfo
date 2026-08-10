@@ -45,6 +45,9 @@ def search_datasets(
     r.raise_for_status()
     return r.json()["result"]
 
+def search_titles(*args, **kwargs):
+    for dataset in search_datasets(*args, **kwargs)["results"]:
+        list_title(dataset)
 
 def download_zip(
     url: str,
