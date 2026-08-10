@@ -4,7 +4,7 @@
 # List dataset titles that match a query and have type CSV
 import gcinfo
 
-gcinfo.search_titles(query="temporary", format_filter="CSV")
+gcinfo.search_titles(query="non-permanent", format_filter="CSV")
 ```
 
 ```py
@@ -15,23 +15,7 @@ gcinfo.list_resources(gcinfo.search_datasets(query='title:"Estimates of the numb
 ```
 
 ```py
-# List all datasets their datatypes that have type CSV, limiting to 15 datasets per Open Canada API call
-import gcinfo
-
-result = gcinfo.search_datasets(query="*:*", rows=15, format_filter="CSV")
-print(f"Total matching packages: {result['count']}")
-
-for i, dataset in enumerate(result["results"]):
-    if i == 2:
-        break
-    gcinfo.list_resources(dataset)
-```
-
-```py
-# Other dataset search examples
-result = gcinfo.search_datasets(query="GC InfoBase OR \"Departmental Plans\" OR \"Departmental Results\"", rows=10)
-result = gcinfo.search_datasets(organization="cbsa-asfc", format_filter="CSV")
-result = gcinfo.search_datasets(format_filter="JSON", rows=25)
+df, df_meta = gcinfo.download_zip("https://www150.statcan.gc.ca/n1/tbl/csv/17100121-eng.zip") # URL from list_resources
 ```
 
 # [Solr query syntax](https://solr.apache.org/guide/solr/latest/query-guide/standard-query-parser.html)
