@@ -108,6 +108,31 @@ def list_resources(package: dict, preferred_formats: list[str] = None):
     print(f"Org: {package.get('organization', {}).get('title')}")
     print(f"Notes: {(package.get('notes') or '')[:200]}...")
 
+    # --- Web UI link ---
+    web_url = None
+
+    # 1. Try package['url'] (sometimes a string, sometimes {'en': ..., 'fr': ...})
+    raw_url = package.get("url")
+    if isinstance(raw_url, dict):
+        web_url = raw_url.get("en") or raw_url.get("fr")
+    elif isinstance(raw_url, str) and raw_url.startswith("http"):
+        web_url = raw_url
+
+    # 2. Better: detect StatCan table number from resource download URLs
+    #    e.g. .../98100361-eng.zip  →  https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810036101
+    if not web_url or "cansim/home" in (web_url or ""):
+        import re
+        for res in package.get("resources", []):
+            url = res.get("url") or ""
+            m = re.search(r"/(\d{8})-(?:eng|fra)\.zip", url)
+            if m:
+                table_id = m.group(1)
+                web_url = f"https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid={table_id}01"
+                break
+
+    if web_url:
+        print(f"Web UI: {web_url}")
+
     for res in package.get("resources", []):
         fmt = (res.get("format") or "").upper()
         if preferred_formats and fmt not in preferred_formats:
