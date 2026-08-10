@@ -120,6 +120,7 @@ def list_resources(package: dict, preferred_formats: list[str] = None):
 
     # 2. Better: detect StatCan table number from resource download URLs
     #    e.g. .../98100361-eng.zip  →  https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810036101
+    table_id = None
     if not web_url or "cansim/home" in (web_url or ""):
         import re
         for res in package.get("resources", []):
@@ -131,7 +132,49 @@ def list_resources(package: dict, preferred_formats: list[str] = None):
                 break
 
     if web_url:
-        print(f"Web UI: {web_url}")
+        print(f"URL: {web_url}")
+
+    citation = None
+
+    # Prefer official StatCan-style citation when we can build it
+    org = (
+        package.get("org_title_at_publication", {}).get("en")
+        or package.get("organization", {}).get("title")
+        or "Statistics Canada"
+    )
+    title = package.get("title") or package.get("title_translated", {}).get("en")
+
+    table_number = None
+    series = package.get("data_series_issue_identification", {})
+    if isinstance(series, dict):
+        raw = series.get("en") or series.get("fr") or ""
+        # "Table 17100121" → "17-10-0121-01"
+        import re
+        m = re.search(r"(\d{8})", raw)
+        if m:
+            tid = m.group(1)
+            table_number = f"{tid[:2]}-{tid[2:4]}-{tid[4:8]}-01"
+    elif table_id:
+        table_number = f"{table_id[:2]}-{table_id[2:4]}-{table_id[4:8]}-01"
+
+    if table_number and title:
+        citation = f"{org}. Table {table_number} {title}"
+    elif title:
+        citation = f"{org}. {title}"
+
+    # Also surface any explicit citation / DOI-like fields if they exist
+    explicit = (
+        package.get("citation")
+        or package.get("doi")
+        or package.get("identifier")
+    )
+    if explicit:
+        citation = explicit if not citation else f"{citation}\n  (also: {explicit})"
+
+    if citation:
+        print(f"Citation: {citation}")
+        if table_number:
+            print(f"DOI:      https://doi.org/10.25318/{table_number.replace('-', '')}-eng")
 
     for res in package.get("resources", []):
         fmt = (res.get("format") or "").upper()
