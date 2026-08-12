@@ -37,7 +37,7 @@ df, df_meta = gcinfo.download_zip("https://www150.statcan.gc.ca/n1/tbl/csv/17100
 Make a matplotlib line plot in **exactly** this style:
 
 - Use `fig, ax = plt.subplots()` (default figsize, do not set a custom size)
-- Use a solid line (`linestyle="-"`)
+- Use a solid line (`linestyle="-"`), do not user markers of any kind.
 - Put the legend **below** the plot using:
   ```python
   ax.legend(
