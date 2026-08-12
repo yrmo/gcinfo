@@ -10,7 +10,6 @@ CACHE_DIR = Path("cache")
 CACHE_DIR.mkdir(exist_ok=True)
 
 
-
 def search_datasets(
     query: str = "*:*",
     rows: int = 20,
@@ -45,9 +44,11 @@ def search_datasets(
     r.raise_for_status()
     return r.json()["result"]
 
+
 def search_titles(*args, **kwargs):
     for dataset in search_datasets(*args, **kwargs)["results"]:
         list_title(dataset)
+
 
 def download_zip(
     url: str,
@@ -56,7 +57,7 @@ def download_zip(
 ) -> Tuple[pd.DataFrame, Optional[pd.DataFrame]]:
     """
     Download a StatCan table ZIP, cache it, and return the data (and optional metadata) DataFrames.
-    
+
     Parameters
     ----------
     url : str
@@ -65,7 +66,7 @@ def download_zip(
         If True, re-download even if the file is already cached.
     return_metadata : bool
         If True, also return the metadata CSV as a second DataFrame.
-    
+
     Returns
     -------
     (df, df_metadata)  or  (df, None)
@@ -84,7 +85,7 @@ def download_zip(
 
     with zipfile.ZipFile(cache_path) as z:
         csv_files = [n for n in z.namelist() if n.lower().endswith(".csv")]
-        
+
         if not csv_files:
             raise ValueError("No CSV files found in the ZIP")
 
@@ -98,6 +99,66 @@ def download_zip(
                 df_metadata = pd.read_csv(f)
 
     return df, df_metadata
+
+
+from pathlib import Path
+from typing import Optional, Tuple, Union, Dict
+import requests
+import pandas as pd
+
+# Assume this already exists in your module
+CACHE_DIR = Path("cache")  # or whatever you use
+CACHE_DIR.mkdir(exist_ok=True)
+
+
+def download_xlsx(
+    url: str,
+    force: bool = False,
+    sheet_name: Union[str, int, list, None] = 0,
+    return_all_sheets: bool = False,
+) -> Union[pd.DataFrame, Dict[str, pd.DataFrame]]:
+    """
+    Download an IRCC / open-data XLSX file, cache it, and return a DataFrame
+    (or dict of DataFrames if multiple sheets).
+
+    Parameters
+    ----------
+    url : str
+        Full URL to the .xlsx file
+        (e.g. https://www.ircc.canada.ca/opendata-donneesouvertes/data/EN_ODP_annual-TR-work-IMP_PT_program_year_end.xlsx)
+    force : bool
+        If True, re-download even if the file is already cached.
+    sheet_name : str | int | list | None
+        Which sheet(s) to load. Same behaviour as pd.read_excel.
+        Default = 0 (first sheet).
+    return_all_sheets : bool
+        If True, ignore sheet_name and return a dict of {sheet_name: DataFrame}
+        for every sheet in the workbook.
+
+    Returns
+    -------
+    pd.DataFrame
+        or Dict[str, pd.DataFrame] when return_all_sheets=True
+    """
+    filename = url.split("/")[-1]
+    filename = filename.split("?")[0]  # clear query parameters
+    cache_path = CACHE_DIR / filename
+
+    if force or not cache_path.exists():
+        print(f"Downloading {filename} ...")
+        r = requests.get(url, timeout=60)
+        r.raise_for_status()
+        cache_path.write_bytes(r.content)
+        print(f"Saved to {cache_path}")
+    else:
+        print(f"Using cached file: {cache_path}")
+
+    if return_all_sheets:
+        xls = pd.ExcelFile(cache_path)
+        return {name: pd.read_excel(xls, sheet_name=name) for name in xls.sheet_names}
+
+    return pd.read_excel(cache_path, sheet_name=sheet_name)
+
 
 def list_resources(package: dict, preferred_formats: list[str] = None):
     """Pretty-print the downloadable resources of a package."""
@@ -123,6 +184,7 @@ def list_resources(package: dict, preferred_formats: list[str] = None):
     table_id = None
     if not web_url or "cansim/home" in (web_url or ""):
         import re
+
         for res in package.get("resources", []):
             url = res.get("url") or ""
             m = re.search(r"/(\d{8})-(?:eng|fra)\.zip", url)
@@ -150,6 +212,7 @@ def list_resources(package: dict, preferred_formats: list[str] = None):
         raw = series.get("en") or series.get("fr") or ""
         # "Table 17100121" → "17-10-0121-01"
         import re
+
         m = re.search(r"(\d{8})", raw)
         if m:
             tid = m.group(1)
@@ -164,9 +227,7 @@ def list_resources(package: dict, preferred_formats: list[str] = None):
 
     # Also surface any explicit citation / DOI-like fields if they exist
     explicit = (
-        package.get("citation")
-        or package.get("doi")
-        or package.get("identifier")
+        package.get("citation") or package.get("doi") or package.get("identifier")
     )
     if explicit:
         citation = explicit if not citation else f"{citation}\n  (also: {explicit})"
@@ -174,7 +235,9 @@ def list_resources(package: dict, preferred_formats: list[str] = None):
     if citation:
         print(f"Citation: {citation}")
         if table_number:
-            print(f"DOI:      https://doi.org/10.25318/{table_number.replace('-', '')}-eng")
+            print(
+                f"DOI:      https://doi.org/10.25318/{table_number.replace('-', '')}-eng"
+            )
 
     for res in package.get("resources", []):
         fmt = (res.get("format") or "").upper()
@@ -183,11 +246,13 @@ def list_resources(package: dict, preferred_formats: list[str] = None):
         print(f"  [{fmt:8}] {res.get('name')}")
         print(f"           {res.get('url')}")
 
+
 def list_title(package: dict, preferred_formats: list[str] = None):
     """Pretty-print the downloadable resources of a package."""
     preferred_formats = preferred_formats or ["CSV", "JSON", "XLSX", "XML", "GEOJSON"]
 
     print(f"{package['title']}")
+
 
 def find_resource_url(
     query: str, name_contains: str, format: str = "CSV"
