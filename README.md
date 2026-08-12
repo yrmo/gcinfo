@@ -31,3 +31,39 @@ df, df_meta = gcinfo.download_zip("https://www150.statcan.gc.ca/n1/tbl/csv/17100
 |`tags:immigration`                             |Has the tag “immigration”         |
 |`title:(removals OR detention)`                |Title contains either word        |
 |`metadata_modified:[2024-01-01T00:00:00Z TO *]`|Updated since 2024                |
+
+# Plot Prompt
+
+Make a matplotlib line plot in **exactly** this style:
+
+- Use `fig, ax = plt.subplots()` (default figsize, do not set a custom size)
+- If plotting **multiple series**, use `marker="."` and `linestyle="dashed"`
+- If plotting **only one series**, use a solid line (`linestyle="-"`) with `marker="."`
+- Put the legend **below** the plot using:
+  ```python
+  ax.legend(
+      title=None,
+      loc="upper center",
+      bbox_to_anchor=(0.5, -0.22),
+      ncol=1,
+      frameon=True
+  )
+  ```
+- Add a source citation under the legend with:
+  ```python
+  plt.figtext(
+      0.5, -0.03,
+      "Source: [insert source here]",
+      ha="center",
+      fontsize=8,
+      style="italic"
+  )
+  ```
+  (I will tell you the exact source text each time)
+- Use `plt.subplots_adjust(bottom=0.3)`
+- Rotate x-tick labels: `plt.xticks(rotation=45, ha="right")`
+- End with `plt.tight_layout()` then `plt.show()`
+- Set title, xlabel, and ylabel with `ax.set_...`
+- Shorten long legend labels when it improves readability
+
+Match this style precisely (including the default figsize).
