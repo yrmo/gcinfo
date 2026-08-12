@@ -15,8 +15,11 @@ gcinfo.list_resources(gcinfo.search_datasets(query='title:"Estimates of the numb
 ```
 
 ```py
-# Download and store dataset and metadata in dataframes
+# Download and store ZIP dataset and metadata in dataframes
 df, df_meta = gcinfo.download_zip("https://www150.statcan.gc.ca/n1/tbl/csv/17100121-eng.zip")
+
+# Download and store XLSX dataset in dataframe 
+df_xlsx = gcinfo.download_xlsx("https://www.ircc.canada.ca/opendata-donneesouvertes/data/EN_ODP_annual-TR-work-TFW_PT_program_year_end.xlsx")
 ```
 
 # [Solr query syntax](https://solr.apache.org/guide/solr/latest/query-guide/standard-query-parser.html)
