@@ -37,10 +37,11 @@ df_xlsx = gcinfo.download_xlsx("https://www.ircc.canada.ca/opendata-donneesouver
 
 # Plot Prompt
 
-Make a matplotlib line plot in **exactly** this style:
+Generate the code for a matplotlib line plot in **exactly** this style:
 
 - Use `fig, ax = plt.subplots()` (default figsize, do not set a custom size)
 - Use a solid line (`linestyle="-"`), do not user markers of any kind.
+- If there is more than one line, use a legend.
 - Put the legend **below** the plot using:
   ```python
   ax.legend(
@@ -67,5 +68,11 @@ Make a matplotlib line plot in **exactly** this style:
 - End with `plt.tight_layout()` then `plt.show()`
 - Set title, xlabel, and ylabel with `ax.set_...`
 - Shorten long legend labels when it improves readability
+- If given Python code to modify, try to use that code, do not invent data.
+- If a citation is long, try to break it up into two lines (or three).
 
 Match this style precisely (including the default figsize).
+
+Citation: [INSERT]
+Legend labels (if applicable): [INSERT]
+Existing code: [INSERT]
