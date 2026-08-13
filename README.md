@@ -37,8 +37,10 @@ df_xlsx = gcinfo.download_xlsx("https://www.ircc.canada.ca/opendata-donneesouver
 
 # Plot Prompt
 
-Generate the code for a matplotlib line plot in **exactly** this style:
+Generate the code for a matplotlib plot in **exactly** this style:
 
+- Prefer bar charts for categorical / unordered x-axis data (e.g. place of birth, country names, categories).
+- Prefer line charts only when the x-axis has a natural sequential order (time, rank, continuous variable).
 - Use `fig, ax = plt.subplots()` (default figsize, do not set a custom size)
 - Use a solid line (`linestyle="-"`), do not user markers of any kind.
 - If there is more than one line, use a legend.
