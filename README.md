@@ -72,6 +72,7 @@ Generate the code for a matplotlib plot in **exactly** this style:
 - Shorten long legend labels when it improves readability
 - If given Python code to modify, try to use that code, do not invent data.
 - If a citation is long, try to break it up into two lines (or three).
+- Use only plain title-case words and spaces with no dashes colons parentheses or "vs", writing full clear comparisons in simple direct English.
 
 Match this style precisely (including the default figsize).
 
