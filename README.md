@@ -20,6 +20,9 @@ df, df_meta = gcinfo.download_zip("https://www150.statcan.gc.ca/n1/tbl/csv/17100
 
 # Download and store XLSX dataset in dataframe 
 df_xlsx = gcinfo.download_xlsx("https://www.ircc.canada.ca/opendata-donneesouvertes/data/EN_ODP_annual-TR-work-TFW_PT_program_year_end.xlsx")
+
+# Download and store CSV dataset in dataframe
+df_csv = gcinfo.download_csv("https://www.cbsa-asfc.gc.ca/data/remove-renvoi-eng.csv")
 ```
 
 # [Solr query syntax](https://solr.apache.org/guide/solr/latest/query-guide/standard-query-parser.html)
