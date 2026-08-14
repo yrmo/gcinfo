@@ -49,6 +49,42 @@ def search_titles(*args, **kwargs):
     for dataset in search_datasets(*args, **kwargs)["results"]:
         list_title(dataset)
 
+def download_csv(
+    url: str,
+    force: bool = False,
+    **kwargs,
+) -> pd.DataFrame:
+    """
+    Download a plain CSV file, cache it, and return a DataFrame.
+
+    Parameters
+    ----------
+    url : str
+        Full URL to the .csv file
+        (e.g. https://www.cbsa-asfc.gc.ca/data/remove-renvoi-eng.csv)
+    force : bool
+        If True, re-download even if the file is already cached.
+    **kwargs
+        Extra arguments passed straight to pd.read_csv
+        (encoding, sep, dtype, etc.)
+
+    Returns
+    -------
+    pd.DataFrame
+    """
+    filename = url.split("/")[-1].split("?")[0]
+    cache_path = CACHE_DIR / filename
+
+    if force or not cache_path.exists():
+        print(f"Downloading {filename} ...")
+        r = requests.get(url, timeout=60)
+        r.raise_for_status()
+        cache_path.write_bytes(r.content)
+        print(f"Saved to {cache_path}")
+    else:
+        print(f"Using cached file: {cache_path}")
+
+    return pd.read_csv(cache_path, **kwargs)
 
 def download_zip(
     url: str,
