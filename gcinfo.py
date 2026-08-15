@@ -84,7 +84,10 @@ def download_csv(
     else:
         print(f"Using cached file: {cache_path}")
 
-    return pd.read_csv(cache_path, **kwargs)
+    try:
+        return pd.read_csv(cache_path, **kwargs)
+    except:
+        return pd.read_csv(cache_path, encoding="latin1", **kwargs)
 
 def download_zip(
     url: str,
