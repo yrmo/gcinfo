@@ -25,7 +25,16 @@ df_xlsx = gcinfo.download_xlsx("https://www.ircc.canada.ca/opendata-donneesouver
 df_csv = gcinfo.download_csv("https://www.cbsa-asfc.gc.ca/data/remove-renvoi-eng.csv")
 ```
 
-# [Solr query syntax](https://solr.apache.org/guide/solr/latest/query-guide/standard-query-parser.html)
+## Searching Datasets
+
+###
+
+```py
+# Search for CBSA datasets with CSV or XLSX format modified since 2026
+gcinfo.search_titles(format_filter=["CSV", "XLSX"], organization="cbsa-asfc", modified_since="2026-01-01T00:00:00Z")
+```
+
+### [Solr query syntax](https://solr.apache.org/guide/solr/latest/query-guide/standard-query-parser.html)
 
 |Query                                        |Meaning                           |
 |---------------------------------------------|----------------------------------|
@@ -38,7 +47,7 @@ df_csv = gcinfo.download_csv("https://www.cbsa-asfc.gc.ca/data/remove-renvoi-eng
 |`title:(removals OR detention)`                |Title contains either word        |
 |`metadata_modified:[2024-01-01T00:00:00Z TO *]`|Updated since 2024                |
 
-# Plot Prompt
+## Plot Prompt
 
 Generate the code for a matplotlib plot in **exactly** this style:
 

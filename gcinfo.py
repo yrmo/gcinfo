@@ -15,30 +15,43 @@ def search_datasets(
     rows: int = 20,
     start: int = 0,
     organization: Optional[str] = None,
-    format_filter: Optional[str] = None,  # e.g. "CSV", "JSON", "XLSX"
+    format_filter: Optional[str | list[str]] = None,  # now accepts str or list
     tags: Optional[list[str]] = None,
+    modified_since: Optional[str] = None,
+    modified_until: Optional[str] = None,
 ) -> dict:
-    """
-    Search the Open Canada CKAN catalog.
-    Returns the raw package_search result.
-    """
     params = {
         "q": query,
         "rows": rows,
         "start": start,
     }
-
     fq_parts = []
+
     if organization:
         fq_parts.append(f"organization:{organization}")
+
     if format_filter:
-        fq_parts.append(f"res_format:{format_filter}")
+        if isinstance(format_filter, str):
+            formats = [format_filter]
+        else:
+            formats = format_filter
+
+        format_clauses = [f"res_format:{fmt}" for fmt in formats]
+        fq_parts.append("(" + " OR ".join(format_clauses) + ")")
+
     if tags:
         for tag in tags:
             fq_parts.append(f"tags:{tag}")
 
+    if modified_since or modified_until:
+        start_date = modified_since or "*"
+        end_date = modified_until or "NOW"
+        fq_parts.append(f"metadata_modified:[{start_date} TO {end_date}]")
+
     if fq_parts:
         params["fq"] = " AND ".join(fq_parts)
+
+    params["sort"] = "metadata_modified desc"
 
     r = requests.get(f"{CKAN}/package_search", params=params, timeout=30)
     r.raise_for_status()
@@ -48,6 +61,7 @@ def search_datasets(
 def search_titles(*args, **kwargs):
     for dataset in search_datasets(*args, **kwargs)["results"]:
         list_title(dataset)
+
 
 def download_csv(
     url: str,
@@ -88,6 +102,7 @@ def download_csv(
         return pd.read_csv(cache_path, **kwargs)
     except:
         return pd.read_csv(cache_path, encoding="latin1", **kwargs)
+
 
 def download_zip(
     url: str,
