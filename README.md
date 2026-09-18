@@ -25,6 +25,11 @@ df_xlsx = gcinfo.download_xlsx("https://www.ircc.canada.ca/opendata-donneesouver
 df_csv = gcinfo.download_csv("https://www.cbsa-asfc.gc.ca/data/remove-renvoi-eng.csv")
 ```
 
+```bash
+# Cached files (saved in ./cache) can but updated by running the script
+python gcinfo.py
+```
+
 ## Searching Datasets
 
 ###

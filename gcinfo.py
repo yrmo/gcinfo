@@ -414,17 +414,80 @@ def find_rbpo_rppo_en_url():
 
 
 if __name__ == "__main__":
-    url = find_rbpo_rppo_en_url()
-    # url = "https://open.canada.ca/data/dataset/a35cf382-690c-4221-a971-cf0fd189a46f/resource/64774bc1-c90a-4ae2-a3ac-d9b50673a895/download/rbpo_rppo_en.csv"
-    # url = "https://open.canada.ca/data/dataset/b15ee8d7-2ac0-4656-8330-6c60d085cda8/resource/02929919-d9ab-494e-8fce-012119b479ff/download/rbpo_rppo_en.csv"
-    print(f"{url=}")
+    import json
+    import re
+    from datetime import datetime, timezone
+    from email.utils import parsedate_to_datetime
 
-    r = requests.get(url, allow_redirects=True, timeout=60)
-    r.raise_for_status()
+    HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; gcinfo-cache-check/1.0)"}
+    URL_RE = re.compile(r'https?://[^\s\'"]+\.(?:zip|xlsx|xls|csv)(?:\?[^\s\'"]*)?', re.I)
 
-    print(r.status_code)
-    print(r.headers.get("content-type"))
-    print(len(r.content), "bytes")
+    def cell_text(source) -> str:
+        text = "".join(source) if isinstance(source, list) else (source or "")
+        while True:
+            nxt = re.sub(
+                r'(["\'])(.*?)\1\s*\+\s*(["\'])(.*?)\3',
+                lambda m: m.group(1) + m.group(2) + m.group(4) + m.group(1),
+                text,
+                count=1,
+            )
+            if nxt == text:
+                return text
+            text = nxt
 
-    with open("rbpo_rppo_en.csv", "wb") as f:
-        f.write(r.content)
+    def urls_in_notebook(path: Path) -> list[str]:
+        nb = json.loads(path.read_text(encoding="utf-8"))
+        found = []
+        for cell in nb.get("cells", []):
+            if cell.get("cell_type") != "code":
+                continue
+            for line in cell_text(cell.get("source", "")).splitlines():
+                if line.strip().startswith("#"):
+                    continue
+                found.extend(URL_RE.findall(line))
+        return found
+
+    by_url = {}
+    for nb in sorted(Path(".").glob("*.ipynb")):
+        for url in urls_in_notebook(nb):
+            names = by_url.setdefault(url, [])
+            if nb.name not in names:
+                names.append(nb.name)
+
+    if not by_url:
+        print("no download URLs in code cells")
+    else:
+        for url, notebooks in by_url.items():
+            name = url.split("/")[-1].split("?")[0]
+            used = ", ".join(notebooks)
+            cache_path = CACHE_DIR / name
+            try:
+                r = requests.head(url, allow_redirects=True, timeout=30, headers=HEADERS)
+                r.raise_for_status()
+                size = r.headers.get("Content-Length")
+                size = int(size) if size and size.isdigit() else None
+                try:
+                    modified = parsedate_to_datetime(r.headers.get("Last-Modified"))
+                except (TypeError, ValueError, IndexError):
+                    modified = None
+
+                stale = not cache_path.exists()
+                if not stale and size is not None and size != cache_path.stat().st_size:
+                    stale = True
+                if not stale and modified is not None:
+                    local = datetime.fromtimestamp(cache_path.stat().st_mtime, tz=timezone.utc)
+                    if modified.tzinfo is None:
+                        modified = modified.replace(tzinfo=timezone.utc)
+                    if modified > local:
+                        stale = True
+
+                if not stale:
+                    print(f"ok       {name}  ({used})")
+                    continue
+
+                r = requests.get(url, allow_redirects=True, timeout=120, headers=HEADERS)
+                r.raise_for_status()
+                cache_path.write_bytes(r.content)
+                print(f"updated  {name}  {len(r.content)} bytes  ({used})")
+            except Exception as e:
+                print(f"error    {name}  {e}  ({used})")
