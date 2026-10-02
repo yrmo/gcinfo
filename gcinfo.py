@@ -474,6 +474,11 @@ if __name__ == "__main__":
 
     seed_cache_from_meta(META_PATH)
 
+    # On GitHub, report freshness and stop. A stale or unreachable file fails
+    # the job. Local runs still download updates and exit 0.
+    on_github = os.environ.get("GITHUB_ACTIONS") == "true"
+    failed = False
+
     def cell_text(source) -> str:
         text = "".join(source) if isinstance(source, list) else (source or "")
         while True:
@@ -537,12 +542,23 @@ if __name__ == "__main__":
                     print(f"ok       {name}  ({used})")
                     continue
 
+                if on_github:
+                    print(f"stale    {name}  ({used})")
+                    failed = True
+                    continue
+
                 r = requests.get(url, allow_redirects=True, timeout=120, headers=HEADERS)
                 r.raise_for_status()
                 cache_path.write_bytes(r.content)
                 print(f"updated  {name}  {len(r.content)} bytes  ({used})")
             except Exception as e:
                 print(f"error    {name}  {e}  ({used})")
+                if on_github:
+                    failed = True
 
-    if any(path.is_file() for path in CACHE_DIR.iterdir()):
+    if on_github and failed:
+        print("cache check failed")
+        raise SystemExit(1)
+
+    if not on_github and any(path.is_file() for path in CACHE_DIR.iterdir()):
         write_cache_meta(META_PATH)
