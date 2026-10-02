@@ -415,12 +415,64 @@ def find_rbpo_rppo_en_url():
 
 if __name__ == "__main__":
     import json
+    import os
     import re
     from datetime import datetime, timezone
     from email.utils import parsedate_to_datetime
 
     HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; gcinfo-cache-check/1.0)"}
     URL_RE = re.compile(r'https?://[^\s\'"]+\.(?:zip|xlsx|xls|csv)(?:\?[^\s\'"]*)?', re.I)
+    META_PATH = Path("cache-meta.txt")
+
+    def write_cache_meta(meta_path: Path) -> None:
+        lines = [
+            "# Cache files for the daily freshness check.",
+            "# Columns: name, size in bytes, mtime_ns, mtime_utc.",
+            "name\tsize\tmtime_ns\tmtime_utc",
+        ]
+        for path in sorted(CACHE_DIR.iterdir(), key=lambda p: p.name):
+            if not path.is_file():
+                continue
+            st = path.stat()
+            mtime = datetime.fromtimestamp(st.st_mtime, tz=timezone.utc).isoformat()
+            lines.append(f"{path.name}\t{st.st_size}\t{st.st_mtime_ns}\t{mtime}")
+        meta_path.write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
+
+    def seed_cache_from_meta(meta_path: Path, cache_dir: Path = CACHE_DIR) -> None:
+        # A clean checkout has no cache/. Recreate each missing file at the
+        # committed size and mtime so the check below can see what changed.
+        if not meta_path.exists():
+            print(f"no cache meta at {meta_path}")
+            return
+        cache_dir.mkdir(exist_ok=True)
+        for raw in meta_path.read_text(encoding="utf-8").splitlines():
+            line = raw.strip()
+            if not line or line.startswith("#") or line.startswith("name\t"):
+                continue
+            parts = line.split("\t")
+            if len(parts) < 3:
+                print(f"skip     {line}  expected name, size, mtime_ns")
+                continue
+            name, size_s, mtime_ns_s = parts[0], parts[1], parts[2]
+            if not name or name != Path(name).name or name in {".", ".."}:
+                print(f"skip     {name}  unsafe name")
+                continue
+            cache_path = cache_dir / name
+            if cache_path.exists():
+                continue
+            size = int(size_s)
+            if size < 0:
+                print(f"skip     {name}  negative size")
+                continue
+            with cache_path.open("wb") as f:
+                if size > 0:
+                    f.seek(size - 1)
+                    f.write(b"\0")
+            mtime_ns = int(mtime_ns_s)
+            os.utime(cache_path, ns=(mtime_ns, mtime_ns))
+            print(f"seeded   {name}  {size} bytes")
+
+    seed_cache_from_meta(META_PATH)
 
     def cell_text(source) -> str:
         text = "".join(source) if isinstance(source, list) else (source or "")
@@ -491,3 +543,6 @@ if __name__ == "__main__":
                 print(f"updated  {name}  {len(r.content)} bytes  ({used})")
             except Exception as e:
                 print(f"error    {name}  {e}  ({used})")
+
+    if any(path.is_file() for path in CACHE_DIR.iterdir()):
+        write_cache_meta(META_PATH)
