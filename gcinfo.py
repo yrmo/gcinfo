@@ -3,6 +3,8 @@ import requests
 import zipfile
 import io
 import pandas as pd
+from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 from typing import Optional, Tuple
 
 CKAN = "https://open.canada.ca/data/api/3/action"
@@ -63,6 +65,58 @@ def search_titles(*args, **kwargs):
         list_title(dataset)
 
 
+_CACHE_HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; gcinfo-cache-check/1.0)"}
+
+
+def _cache_is_stale(
+    cache_path: Path, size: Optional[int], modified: Optional[datetime]
+) -> bool:
+    """True when the file is missing, a different size, or older than Last-Modified."""
+    if not cache_path.exists():
+        return True
+    if size is not None and size != cache_path.stat().st_size:
+        return True
+    if modified is None:
+        return False
+    if modified.tzinfo is None:
+        modified = modified.replace(tzinfo=timezone.utc)
+    local = datetime.fromtimestamp(cache_path.stat().st_mtime, tz=timezone.utc)
+    return modified > local
+
+
+def _ensure_cached(
+    url: str, cache_path: Path, force: bool = False, timeout: Optional[int] = 60
+) -> None:
+    """Download url into cache_path when forced, missing, or stale."""
+    stale = force or not cache_path.exists()
+    if not stale:
+        try:
+            head = requests.head(
+                url, allow_redirects=True, timeout=30, headers=_CACHE_HEADERS
+            )
+            head.raise_for_status()
+            size_header = head.headers.get("Content-Length")
+            size = int(size_header) if size_header and size_header.isdigit() else None
+            try:
+                modified = parsedate_to_datetime(head.headers.get("Last-Modified"))
+            except (TypeError, ValueError, IndexError):
+                modified = None
+            stale = _cache_is_stale(cache_path, size, modified)
+        except requests.RequestException as e:
+            print(f"Could not check {cache_path.name}: {e}")
+            stale = False
+
+    if not stale:
+        print(f"Using cached file: {cache_path}")
+        return
+
+    print(f"Downloading {cache_path.name} ...")
+    r = requests.get(url, timeout=timeout)
+    r.raise_for_status()
+    cache_path.write_bytes(r.content)
+    print(f"Saved to {cache_path}")
+
+
 def download_csv(
     url: str,
     force: bool = False,
@@ -77,7 +131,9 @@ def download_csv(
         Full URL to the .csv file
         (e.g. https://www.cbsa-asfc.gc.ca/data/remove-renvoi-eng.csv)
     force : bool
-        If True, re-download even if the file is already cached.
+        If True, re-download even if the cached file is current.
+        The cache is also refreshed when Content-Length or Last-Modified
+        shows the file is stale.
     **kwargs
         Extra arguments passed straight to pd.read_csv
         (encoding, sep, dtype, etc.)
@@ -88,15 +144,7 @@ def download_csv(
     """
     filename = url.split("/")[-1].split("?")[0]
     cache_path = CACHE_DIR / filename
-
-    if force or not cache_path.exists():
-        print(f"Downloading {filename} ...")
-        r = requests.get(url, timeout=60)
-        r.raise_for_status()
-        cache_path.write_bytes(r.content)
-        print(f"Saved to {cache_path}")
-    else:
-        print(f"Using cached file: {cache_path}")
+    _ensure_cached(url, cache_path, force=force, timeout=60)
 
     try:
         return pd.read_csv(cache_path, **kwargs)
@@ -117,7 +165,9 @@ def download_zip(
     url : str
         Full URL to the .zip file (e.g. https://www150.statcan.gc.ca/n1/tbl/csv/17100121-eng.zip)
     force : bool
-        If True, re-download even if the file is already cached.
+        If True, re-download even if the cached file is current.
+        The cache is also refreshed when Content-Length or Last-Modified
+        shows the file is stale.
     return_metadata : bool
         If True, also return the metadata CSV as a second DataFrame.
 
@@ -127,15 +177,7 @@ def download_zip(
     """
     filename = url.split("/")[-1]
     cache_path = CACHE_DIR / filename
-
-    if force or not cache_path.exists():
-        print(f"Downloading {filename} ...")
-        r = requests.get(url)
-        r.raise_for_status()
-        cache_path.write_bytes(r.content)
-        print(f"Saved to {cache_path}")
-    else:
-        print(f"Using cached file: {cache_path}")
+    _ensure_cached(url, cache_path, force=force, timeout=None)
 
     with zipfile.ZipFile(cache_path) as z:
         csv_files = [n for n in z.namelist() if n.lower().endswith(".csv")]
@@ -181,7 +223,9 @@ def download_xlsx(
         Full URL to the .xlsx file
         (e.g. https://www.ircc.canada.ca/opendata-donneesouvertes/data/EN_ODP_annual-TR-work-IMP_PT_program_year_end.xlsx)
     force : bool
-        If True, re-download even if the file is already cached.
+        If True, re-download even if the cached file is current.
+        The cache is also refreshed when Content-Length or Last-Modified
+        shows the file is stale.
     sheet_name : str | int | list | None
         Which sheet(s) to load. Same behaviour as pd.read_excel.
         Default = 0 (first sheet).
@@ -197,15 +241,7 @@ def download_xlsx(
     filename = url.split("/")[-1]
     filename = filename.split("?")[0]  # clear query parameters
     cache_path = CACHE_DIR / filename
-
-    if force or not cache_path.exists():
-        print(f"Downloading {filename} ...")
-        r = requests.get(url, timeout=60)
-        r.raise_for_status()
-        cache_path.write_bytes(r.content)
-        print(f"Saved to {cache_path}")
-    else:
-        print(f"Using cached file: {cache_path}")
+    _ensure_cached(url, cache_path, force=force, timeout=60)
 
     if return_all_sheets:
         xls = pd.ExcelFile(cache_path)
@@ -528,15 +564,7 @@ if __name__ == "__main__":
                 except (TypeError, ValueError, IndexError):
                     modified = None
 
-                stale = not cache_path.exists()
-                if not stale and size is not None and size != cache_path.stat().st_size:
-                    stale = True
-                if not stale and modified is not None:
-                    local = datetime.fromtimestamp(cache_path.stat().st_mtime, tz=timezone.utc)
-                    if modified.tzinfo is None:
-                        modified = modified.replace(tzinfo=timezone.utc)
-                    if modified > local:
-                        stale = True
+                stale = _cache_is_stale(cache_path, size, modified)
 
                 if not stale:
                     print(f"ok       {name}  ({used})")
