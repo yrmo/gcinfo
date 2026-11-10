@@ -73,6 +73,11 @@ def cache_filename(url: str) -> str:
     return name
 
 
+# Country outlines for the maps. Not a data release, and the GitHub raw
+# Last-Modified changes when that repo changes.
+STATIC_CACHE_NAMES = {"ne_50m_admin_0_countries.geojson"}
+
+
 def download_csv(
     url: str,
     force: bool = False,
@@ -548,6 +553,9 @@ if __name__ == "__main__":
         for url, notebooks in by_url.items():
             name = cache_filename(url)
             used = ", ".join(notebooks)
+            if name in STATIC_CACHE_NAMES:
+                print(f"skip     {name}  static file  ({used})")
+                continue
             cache_path = CACHE_DIR / name
             try:
                 r = requests.head(url, allow_redirects=True, timeout=30, headers=HEADERS)
