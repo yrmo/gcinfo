@@ -77,6 +77,11 @@ def cache_filename(url: str) -> str:
 # Last-Modified changes when that repo changes.
 STATIC_CACHE_NAMES = {"ne_50m_admin_0_countries.geojson"}
 
+# World Bank republishes NY.GDP.PCAP.KD.zip often enough that Last-Modified
+# and Content-Length move without a notebook change. Do not fail the daily
+# job on it, and do not refresh it from this check.
+IGNORE_STALE_CACHE_NAMES = {"NY.GDP.PCAP.KD.zip"}
+
 
 def download_csv(
     url: str,
@@ -579,6 +584,10 @@ if __name__ == "__main__":
 
                 if not stale:
                     print(f"ok       {name}  ({used})")
+                    continue
+
+                if name in IGNORE_STALE_CACHE_NAMES:
+                    print(f"skip     {name}  stale ignored  ({used})")
                     continue
 
                 if on_github:
