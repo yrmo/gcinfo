@@ -63,6 +63,16 @@ def search_titles(*args, **kwargs):
         list_title(dataset)
 
 
+def cache_filename(url: str) -> str:
+    """Name a cached download. World Bank indicator URLs have no file extension."""
+    name = url.split("/")[-1].split("?")[0]
+    if "downloadformat=csv" in url.lower() and not name.lower().endswith(
+        (".zip", ".csv", ".xlsx", ".xls")
+    ):
+        return name + ".zip"
+    return name
+
+
 def download_csv(
     url: str,
     force: bool = False,
@@ -108,9 +118,11 @@ def download_zip(
     url: str,
     force: bool = False,
     return_metadata: bool = True,
+    data_name: str | None = None,
+    read_csv_kwargs: dict | None = None,
 ) -> Tuple[pd.DataFrame, Optional[pd.DataFrame]]:
     """
-    Download a StatCan table ZIP, cache it, and return the data (and optional metadata) DataFrames.
+    Download a ZIP of CSVs, cache it, and return the data (and optional metadata) DataFrames.
 
     Parameters
     ----------
@@ -119,13 +131,18 @@ def download_zip(
     force : bool
         If True, re-download even if the file is already cached.
     return_metadata : bool
-        If True, also return the metadata CSV as a second DataFrame.
+        If True, also return another CSV from the ZIP as a second DataFrame.
+    data_name : str or None
+        If set, read the CSV whose filename starts with this prefix.
+        World Bank zips list a metadata CSV first, so the data file has to be named.
+    read_csv_kwargs : dict or None
+        Extra arguments passed to pd.read_csv for the data file.
 
     Returns
     -------
     (df, df_metadata)  or  (df, None)
     """
-    filename = url.split("/")[-1]
+    filename = cache_filename(url)
     cache_path = CACHE_DIR / filename
 
     if force or not cache_path.exists():
@@ -137,20 +154,31 @@ def download_zip(
     else:
         print(f"Using cached file: {cache_path}")
 
+    read_csv_kwargs = read_csv_kwargs or {}
     with zipfile.ZipFile(cache_path) as z:
         csv_files = [n for n in z.namelist() if n.lower().endswith(".csv")]
 
         if not csv_files:
             raise ValueError("No CSV files found in the ZIP")
 
-        # First CSV is almost always the data
-        with z.open(csv_files[0]) as f:
-            df = pd.read_csv(f)
+        if data_name:
+            matches = [n for n in csv_files if Path(n).name.startswith(data_name)]
+            if not matches:
+                raise ValueError(f"No CSV in {filename} starts with {data_name}")
+            data_file = matches[0]
+        else:
+            # First CSV is the data for Statistics Canada table zips.
+            data_file = csv_files[0]
+
+        with z.open(data_file) as f:
+            df = pd.read_csv(f, **read_csv_kwargs)
 
         df_metadata = None
-        if return_metadata and len(csv_files) > 1:
-            with z.open(csv_files[1]) as f:
-                df_metadata = pd.read_csv(f)
+        if return_metadata:
+            others = [n for n in csv_files if n != data_file]
+            if others:
+                with z.open(others[0]) as f:
+                    df_metadata = pd.read_csv(f)
 
     return df, df_metadata
 
@@ -421,7 +449,10 @@ if __name__ == "__main__":
     from email.utils import parsedate_to_datetime
 
     HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; gcinfo-cache-check/1.0)"}
-    URL_RE = re.compile(r'https?://[^\s\'"]+\.(?:zip|xlsx|xls|csv)(?:\?[^\s\'"]*)?', re.I)
+    URL_RE = re.compile(
+        r'https?://[^\s\'"<>]+(?:\.(?:zip|xlsx|xls|csv|geojson)(?:\?[^\s\'"<>]*)?|\?downloadformat=csv)',
+        re.I,
+    )
     META_PATH = Path("cache-meta.txt")
 
     def write_cache_meta(meta_path: Path) -> None:
@@ -515,7 +546,7 @@ if __name__ == "__main__":
         print("no download URLs in code cells")
     else:
         for url, notebooks in by_url.items():
-            name = url.split("/")[-1].split("?")[0]
+            name = cache_filename(url)
             used = ", ".join(notebooks)
             cache_path = CACHE_DIR / name
             try:
